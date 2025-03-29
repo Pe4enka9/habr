@@ -68,9 +68,14 @@ class ArticleController extends Controller
     // Обновление статьи
     public function update(Article $article, ArticleRequest $request): JsonResponse
     {
+        if ($request->hasFile('image')) {
+            $path = $request->file('image')->store('articles', 'public');
+        }
+
         $article->update([
             'name' => $request->name,
             'text' => $request->text,
+            'image' => $path ?? $article->image,
             'slug' => $request->slug ?? Str::slug($request->name),
         ]);
 
@@ -101,7 +106,7 @@ class ArticleController extends Controller
         $comment = Comment::create([
             'article_id' => $article->id,
             'user_id' => $request->user()->id,
-            'content' => $request->content,
+            'content' => $request->get('content'),
         ]);
 
         return response()->json(new CommentResource($comment), 201);
