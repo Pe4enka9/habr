@@ -12,6 +12,7 @@ use App\Models\Rating;
 use App\Queries\ArticleQuery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Str;
 
 class ArticleController extends Controller
@@ -46,13 +47,14 @@ class ArticleController extends Controller
     {
         if ($request->hasFile('image')) {
             $path = $request->file('image')->store('articles', 'public');
+            $fullPath = Storage::disk('public')->url($path);
         }
 
         $article = Article::create([
             'name' => $request->name,
             'text' => $request->text,
             'slug' => $request->slug ?? Str::slug($request->name),
-            'image' => $path ?? null,
+            'image' => $fullPath ?? null,
             'date_of_publication' => now(),
             'author_id' => $request->user()->id,
         ]);
