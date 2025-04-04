@@ -8,6 +8,7 @@ use App\Http\Resources\ArticleResource;
 use App\Http\Resources\CommentResource;
 use App\Models\Article;
 use App\Models\Comment;
+use App\Models\Rating;
 use App\Queries\ArticleQuery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -93,8 +94,26 @@ class ArticleController extends Controller
     // Оценка статьи
     public function rate(Article $article, Request $request): JsonResponse
     {
+        $rating = Rating::where('user_id', $request->user()->id)
+            ->where('article_id', $article->id)
+            ->first();
+
+        if (!$rating) {
+            Rating::create([
+                'user_id' => $request->user()->id,
+                'article_id' => $article->id,
+                'rating' => $request->input('rating'),
+            ]);
+        } else {
+            $rating->update([
+                'rating' => $request->input('rating'),
+            ]);
+        }
+
+        $avgRating = $article->ratings()->avg('rating');
+
         $article->update([
-            'rating' => $request->rating,
+            'rating' => $avgRating,
         ]);
 
         return response()->json(new ArticleResource($article));

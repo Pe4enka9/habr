@@ -15,10 +15,11 @@ use Illuminate\Support\Collection;
  * @property string $image
  * @property Carbon $date_of_publication
  * @property int $author_id
- * @property int $rating
+ * @property float $rating
  *
  * @property-read Comment<Collection> $comments
  * @property-read User $author
+ * @property-read Rating<Collection> $ratings
  */
 class Article extends Model
 {
@@ -36,5 +37,10 @@ class Article extends Model
     public function author(): BelongsTo
     {
         return $this->belongsTo(User::class, 'author_id');
+    }
+
+    public function ratings(): HasMany
+    {
+        return $this->hasMany(Rating::class, 'article_id');
     }
 }

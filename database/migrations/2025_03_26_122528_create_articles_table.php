@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('image')->nullable();
             $table->dateTime('date_of_publication');
             $table->unsignedBigInteger('author_id');
-            $table->smallInteger('rating')->default(0);
+            $table->decimal('rating')->default(0);
             $table->timestamps();
 
             $table->foreign('author_id')->references('id')->on('users')->onDelete('cascade');
