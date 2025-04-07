@@ -8,19 +8,20 @@ use App\Http\Resources\ArticleResource;
 use App\Http\Resources\CommentResource;
 use App\Models\Article;
 use App\Models\Comment;
-use App\Models\Rating;
 use App\Queries\ArticleQuery;
+use App\Services\Actions\Dtos\StoreArticleDto;
+use App\Services\Actions\RateArticleAction;
+use App\Services\Actions\StoreArticleAction;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Str;
 
 class ArticleController extends Controller
 {
     // Получение списка статей
-    public function index(Request $request): JsonResponse
+    public function index(Request $request, ArticleQuery $articleQuery): JsonResponse
     {
-        $articles = (new ArticleQuery())->sort($request->all());
+        $articles = $articleQuery->sort($request->all());
 
         return response()->json(ArticleResource::collection($articles));
     }
@@ -43,21 +44,17 @@ class ArticleController extends Controller
     }
 
     // Создание статьи
-    public function store(ArticleRequest $request): JsonResponse
+    public function store(ArticleRequest $request, StoreArticleAction $storeArticleAction): JsonResponse
     {
-        if ($request->hasFile('image')) {
-            $path = $request->file('image')->store('articles', 'public');
-            $fullPath = Storage::disk('public')->url($path);
-        }
-
-        $article = Article::create([
-            'name' => $request->name,
-            'text' => $request->text,
-            'slug' => $request->slug ?? Str::slug($request->name),
-            'image' => $fullPath ?? null,
-            'date_of_publication' => now(),
-            'author_id' => $request->user()->id,
-        ]);
+        $article = $storeArticleAction->handle(
+            new StoreArticleDto(
+                name: $request->get('name'),
+                text: $request->get('text'),
+                slug: $request->get('slug'),
+                user: $request->user(),
+                file: $request->file('image'),
+            )
+        );
 
         return response()->json(new ArticleResource($article), 201);
     }
@@ -94,29 +91,9 @@ class ArticleController extends Controller
     }
 
     // Оценка статьи
-    public function rate(Article $article, Request $request): JsonResponse
+    public function rate(Article $article, Request $request, RateArticleAction $rateArticleAction): JsonResponse
     {
-        $rating = Rating::where('user_id', $request->user()->id)
-            ->where('article_id', $article->id)
-            ->first();
-
-        if (!$rating) {
-            Rating::create([
-                'user_id' => $request->user()->id,
-                'article_id' => $article->id,
-                'rating' => $request->input('rating'),
-            ]);
-        } else {
-            $rating->update([
-                'rating' => $request->input('rating'),
-            ]);
-        }
-
-        $avgRating = $article->ratings()->avg('rating');
-
-        $article->update([
-            'rating' => $avgRating,
-        ]);
+        $rateArticleAction->handle($article, $request->user()->id, $request->get('rating'));
 
         return response()->json(new ArticleResource($article));
     }
