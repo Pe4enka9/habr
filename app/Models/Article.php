@@ -17,9 +17,9 @@ use Illuminate\Support\Collection;
  * @property int $author_id
  * @property float $rating
  *
- * @property-read Comment<Collection> $comments
+ * @property-read Collection<Comment> $comments
  * @property-read User $author
- * @property-read Rating<Collection> $ratings
+ * @property-read Collection<Rating> $ratings
  */
 class Article extends Model
 {
